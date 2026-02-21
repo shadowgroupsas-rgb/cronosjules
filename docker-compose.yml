@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # Database
+  db:
+    image: postgres:16-alpine
+    container_name: cronos_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-cronos_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cronos_password}
+      POSTGRES_DB: ${DB_DATABASE:-cronos}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cronos_net
+
+  # Backend API
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: cronos_api
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-cronos_user}
+      DB_PASSWORD: ${DB_PASSWORD:-cronos_password}
+      DB_DATABASE: ${DB_DATABASE:-cronos}
+    depends_on:
+      - db
+    networks:
+      - cronos_net
+
+  # Frontend Web
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: cronos_web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+      API_URL_INTERNAL: http://api:4000/api/v1
+    depends_on:
+      - api
+    networks:
+      - cronos_net
+
+networks:
+  cronos_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
