@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cronos_mobile/core/app_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('es', null);
   runApp(const ProviderScope(child: CronosApp()));
 }
 
@@ -17,6 +20,7 @@ class CronosApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'CRONOS',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('es'),
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0A0A0F),
         primaryColor: const Color(0xFFCC2229),

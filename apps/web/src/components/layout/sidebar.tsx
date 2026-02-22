@@ -17,7 +17,7 @@ import {
 
 const routes = [
   {
-    label: "Dashboard",
+    label: "Inicio",
     icon: LayoutDashboard,
     href: "/dashboard",
     color: "text-sky-500",

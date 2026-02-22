@@ -128,7 +128,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
                               ),
                               Text(
-                                DateFormat('EEEE, d MMMM').format(DateTime.now()),
+                                DateFormat('EEEE, d MMMM', 'es').format(DateTime.now()),
                                 style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
                               ),
                             ],
