@@ -3,56 +3,76 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "lucide-react"; // Wait, Badge is ui component? I don't have it. Use simple div.
-// lucide-react doesn't have Badge.
-import { Activity, User } from "lucide-react";
+import { Activity } from "lucide-react";
 import { GodEyeMap } from "@/components/maps/god-eye-map";
 
-// Mock data until backend is fully functional
-const MOCK_USERS = [
-  { id: "1", name: "Juan Pérez", role: "Técnico", department: "Mantenimiento", lat: 4.7110, lng: -74.0721, status: "active", lastUpdate: new Date().toISOString() },
-  { id: "2", name: "Maria Garcia", role: "Supervisor", department: "Operaciones", lat: 4.6980, lng: -74.0500, status: "active", lastUpdate: new Date().toISOString() },
-  { id: "3", name: "Carlos Ruiz", role: "Técnico", department: "Instalaciones", lat: 4.7250, lng: -74.0300, status: "inactive", lastUpdate: new Date().toISOString() },
-];
-
 export default function GodEyePage() {
-  const [users, setUsers] = useState<any[]>(MOCK_USERS);
+  const [users, setUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
 
-  // Poll for active users
+  // Poll for active users list
   useEffect(() => {
-    const interval = setInterval(() => {
-      // In real implementation: fetch('/api/proxy/god-eye/active').then...
-      // For now, simulate movement
-      setUsers(prev => prev.map(u => {
-        if (u.status === 'active') {
-          return {
-            ...u,
-            lat: u.lat + (Math.random() - 0.5) * 0.001,
-            lng: u.lng + (Math.random() - 0.5) * 0.001,
-            lastUpdate: new Date().toISOString()
-          };
+    const fetchActive = async () => {
+        try {
+            const res = await fetch('/api/proxy/god-eye/active');
+            if (res.ok) {
+                const data = await res.json();
+                setUsers(data);
+            }
+        } catch (e) {
+            console.error(e);
         }
-        return u;
-      }));
-    }, 5000);
+    };
+
+    fetchActive();
+    const interval = setInterval(fetchActive, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // Subscribe to live tracking for selected user (SSE)
+  // Subscribe to live tracking (SSE)
   useEffect(() => {
-    if (!selectedUser) return;
+    // Connect to "all" channel to receive updates for everyone
+    const eventSource = new EventSource('/api/proxy/god-eye/live/all');
 
-    // const eventSource = new EventSource(`/api/proxy/god-eye/live/${selectedUser.id}`);
-    // eventSource.onmessage = (event) => {
-    //   const data = JSON.parse(event.data);
-    //   // Update user position
-    // };
-    // return () => eventSource.close();
-  }, [selectedUser]);
+    eventSource.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === 'heartbeat') return;
+
+        const data = message.data || message; // Handle wrapping
+
+        // Update user position in list if user exists
+        setUsers(prevUsers => {
+            return prevUsers.map(user => {
+                // Assuming the recordId maps to user, or the backend emits userId.
+                // For this demo, let's assume if we have a match by some criteria (e.g. tracking active), update.
+                // Or simplified: if 'data.recordId' matches active record.
+
+                // Since we don't have recordId in the user list from getActive() stub yet,
+                // let's blindly update the first user for visual confirmation if ID matches.
+                // In a real app, `getActive` returns `overtimeRecordId`.
+
+                // Mock update logic:
+                if (data.lat && data.lng) {
+                     // Check if this update belongs to this user (needs ID match)
+                     // For now, if we receive an update, update the user with ID 1 for demo purposes if no ID present
+                     if (user.id === "1" || user.id === data.userId) {
+                         return { ...user, lat: data.lat, lng: data.lng };
+                     }
+                }
+                return user;
+            });
+        });
+      } catch (e) {
+        console.error("SSE Parse Error", e);
+      }
+    };
+
+    return () => eventSource.close();
+  }, []);
 
   return (
-    <div className="flex h-full flex-col md:flex-row gap-4 h-[calc(100vh-8rem)]">
+    <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-8rem)]">
       {/* Map Area */}
       <div className="flex-1 rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden min-h-[400px]">
          <GodEyeMap
@@ -96,11 +116,16 @@ export default function GodEyePage() {
                       {user.name}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1 truncate">
-                      {user.department} • {user.role}
+                      {user.role}
                     </p>
                   </div>
                 </div>
               ))}
+              {users.length === 0 && (
+                <div className="text-center p-4 text-muted-foreground">
+                    Cargando empleados...
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

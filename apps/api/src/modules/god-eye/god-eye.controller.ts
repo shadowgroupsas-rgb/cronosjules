@@ -1,25 +1,34 @@
-import { Controller, Get, Param, Sse, MessageEvent } from '@nestjs/common';
-import { Observable, interval, map } from 'rxjs';
+import { Controller, Get, Param, Sse, MessageEvent, Inject } from '@nestjs/common';
+import { Observable, interval, map, merge, filter } from 'rxjs';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { GodEyeService } from './god-eye.service';
 
 @ApiTags('god-eye')
 @Controller('god-eye')
 export class GodEyeController {
+  constructor(private godEyeService: GodEyeService) {}
 
   @Get('active')
   @ApiOperation({ summary: 'Get active employees' })
-  getActive() {
-    // Stub
-    return [];
+  async getActive() {
+    return this.godEyeService.getActiveEmployees();
   }
 
   @Sse('live/:recordId')
   @ApiOperation({ summary: 'Live tracking SSE' })
   liveTracking(@Param('recordId') recordId: string): Observable<MessageEvent> {
-    return interval(1000).pipe(
-      map((_) => ({
-        data: { recordId, lat: 0, lng: 0, timestamp: new Date() },
-      }) as MessageEvent),
+    const stream$ = this.godEyeService.getLocationStream().pipe(
+      filter(data => recordId === 'all' || data.recordId === recordId),
+      map(data => ({
+        data: data,
+      }) as MessageEvent)
     );
+
+    // Also send a heartbeat every 30s to keep connection alive
+    const heartbeat$ = interval(30000).pipe(
+        map(_ => ({ type: 'heartbeat', data: { timestamp: new Date() } }) as MessageEvent)
+    );
+
+    return merge(stream$, heartbeat$);
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cronos_mobile/core/auth_provider.dart';
 import 'package:cronos_mobile/features/dashboard/map_widget.dart';
+import 'package:cronos_mobile/features/dashboard/services/clock_service.dart';
 import 'package:cronos_mobile/shared/widgets/glassmorphism_card.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -16,9 +17,45 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool isClockedIn = false;
+  bool isLoading = false;
   DateTime? clockInTime;
 
-  // Timer logic would go here
+  void _toggleClock() async {
+    final clockService = ref.read(clockServiceProvider);
+
+    setState(() => isLoading = true);
+
+    try {
+        if (isClockedIn) {
+            // Clock Out
+            // In a real app, show dialog to get description
+            await clockService.clockOut("Fin de turno");
+            setState(() {
+                isClockedIn = false;
+                clockInTime = null;
+            });
+             ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Turno finalizado exitosamente')),
+            );
+        } else {
+            // Clock In
+            await clockService.clockIn();
+            setState(() {
+                isClockedIn = true;
+                clockInTime = DateTime.now();
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Turno iniciado. Rastreo activado.')),
+            );
+        }
+    } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+    } finally {
+        setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -121,18 +158,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 // Center Clock Button
                 Center(
                   child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        isClockedIn = !isClockedIn;
-                        if (isClockedIn) {
-                          clockInTime = DateTime.now();
-                        } else {
-                          clockInTime = null;
-                        }
-                      });
-                    },
+                    onTap: isLoading ? null : _toggleClock,
                     child: Animate(
-                      onPlay: (controller) => controller.repeat(),
+                      onPlay: (controller) => isClockedIn ? controller.repeat() : controller.stop(),
                       child: Container(
                         width: 200,
                         height: 200,
@@ -152,7 +180,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                         child: Center(
-                          child: Column(
+                          child: isLoading
+                           ? const CircularProgressIndicator(color: Colors.white)
+                           : Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
