@@ -1,30 +1,41 @@
 # CRONOS
 
-System for overtime registration and management with real-time GPS tracking.
+Sistema integral de registro y gestión de horas extras con rastreo GPS en tiempo real para Copower Energy Solutions.
 
-## Architecture
+## Arquitectura
+
+El sistema es un Monorepo compuesto por:
 
 - **Backend:** NestJS (Node.js) + PostgreSQL + TypeORM
-- **Frontend:** Next.js (Web Panel)
-- **Mobile:** Flutter (Android/iOS)
-- **Infrastructure:** Docker, Nginx
+- **Frontend:** Next.js (Panel Web de Administración)
+- **Mobile:** Flutter (App para empleados iOS/Android)
+- **Infraestructura:** Docker, Nginx
 
-## Getting Started
+## Empezando (Getting Started)
 
-### Prerequisites
+### Requisitos Previos
 
 - Node.js 22 LTS
 - Docker & Docker Compose
-- Flutter SDK (for mobile)
+- Flutter SDK (para móvil)
 
-### Local Setup
+### Configuración Local
 
-See [LOCAL_SETUP.md](LOCAL_SETUP.md) for detailed instructions.
+Para instrucciones detalladas sobre cómo correr el proyecto en tu máquina, consulta:
+👉 **[LOCAL_SETUP.md](./LOCAL_SETUP.md)**
 
-### Deployment
+### Despliegue en Servidor
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for deployment instructions.
+Para instrucciones sobre cómo desplegar en un VPS (Ubuntu) para producción, consulta:
+👉 **[DEPLOYMENT.md](./DEPLOYMENT.md)**
 
-## License
+## Tecnologías Clave
 
-Proprietary - Copower Energy Solutions
+*   **Autenticación:** JWT con Cookies HttpOnly (Seguridad máxima).
+*   **Tiempo Real:** Server-Sent Events (SSE) para el mapa "Ojo de Dios".
+*   **Mapas:** Google Maps API.
+*   **Reportes:** Generación automática de PDF y Excel.
+
+## Licencia
+
+Propiedad de Copower Energy Solutions.
